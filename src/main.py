@@ -1,16 +1,19 @@
 import cv2 as cv
+import numpy as np
 import os
+import re
 import math
 import argparse
-import src.utils.text_exctraxtor as textExtractor
+import src.utils.text_exctraxtor as text_extractor
 import pytesseract
 
 
-def getFrameFromVideo(pathToVideo):
-    capture = cv.VideoCapture(cv.samples.findFileOrKeep(pathToVideo))
+def getFrameFromVideo(path_to_video):
+    capture = cv.VideoCapture()
+    capture.open(cv.samples.findFileOrKeep(path_to_video))
     if not capture.isOpened():
-        print('Unable to open: ' + pathToVideo)
-        exit(0)
+        print('Unable to open: ' + path_to_video)
+        return None
 
     # defaultWidth = capture.get(cv.CAP_PROP_FRAME_WIDTH)
     # defaultHeight = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
@@ -19,51 +22,84 @@ def getFrameFromVideo(pathToVideo):
         ret, frame = capture.read()
         if frame is None:
             break
-        # currentFrameTime = capture.get(cv.CAP_PROP_POS_MSEC)
-        currentFrame = capture.get(cv.CAP_PROP_POS_FRAMES)
+        # current_frame_time = capture.get(cv.CAP_PROP_POS_MSEC)
+        current_frame = capture.get(cv.CAP_PROP_POS_FRAMES)
 
-        if currentFrame > 1:
-            return frame
+        if current_frame > 1:
+            gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+            return getCleanImage(gray_frame)
 
         keyboard = cv.waitKey(30)
         if keyboard == 'q' or keyboard == 27:
             break
 
 
-def getCleanImage(image):
-    height, width, _ = image.shape
-    hls = cv.cvtColor(image, cv.COLOR_BGR2HLS)
-    hlsChannels = cv.split(hls)
-    lightnessChannel = hlsChannels[1]
-    for i in range(height):
-        for j in range(width):
-            lightnessChannel[i][j] = 0 if lightnessChannel[i][j] < 215 else 255
+def getCleanImage(img):
+    _, image = cv.threshold(img, 212, 255, cv.THRESH_BINARY_INV)
+    image = cv.equalizeHist(image)
+    image = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 7, 35)
 
-    hlsChannels[1] = lightnessChannel
-    hls = cv.merge(hlsChannels)
-    bgrImg = cv.cvtColor(hls, cv.COLOR_HLS2BGR)
-    # cv.imwrite('../output/sig10.jpg', bgrImg)
-    return bgrImg
+    return cv.cvtColor(image, cv.COLOR_GRAY2BGR)
 
 
-# parser = argparse.ArgumentParser(description='Video processing')
-# parser.add_argument('--i', type=str, help='Input file path')
-# parser.add_argument('--o', nargs='?', type=str, default='../output/output.txt', help='Output file path')
-# args = parser.parse_args()
-pathToVideos = os.path.join('E:', 'wfs0.4 test', 'videosTest')
-# pathToVideos = os.path.join('../output')
-filesNameList = os.listdir(pathToVideos)
+def getOnlyCamName(img):
+    return img[520:560, 50:140]
 
-for fileName in filesNameList:
-    filePath = os.path.join(pathToVideos, fileName)
-    img = getCleanImage(getFrameFromVideo(filePath))
-    # img = getCleanImage(cv.imread(filePath))
-    extractor = textExtractor.PyTextractor()
-    test = extractor.get_image_text(img, display=True)
-    print(test)
-    # newFilePath = os.path.join(pathToVideos, test[0])
-    # try:
-    #     os.mkdir(newFilePath)
-    #     os.rename(filePath, os.path.join(newFilePath, fileName))
-    # except FileExistsError:
-    #     os.rename(filePath, os.path.join(newFilePath, fileName))
+
+def copyFile(current_file_path, new_file_path, file_name):
+    try:
+        os.mkdir(new_file_path)
+        os.rename(current_file_path, os.path.join(new_file_path, file_name))
+    except FileExistsError:
+        os.rename(current_file_path, os.path.join(new_file_path, file_name))
+
+
+def convertStringArrayToString(str_arr):
+    result = '[\'' + str_arr[0] + '\''
+    for string in str_arr[1:]:
+        result += (', \'' + string + '\'')
+    result += ']'
+    return result.replace('\n', '\\n')
+
+
+if __name__ == '__main__':
+    # parser = argparse.ArgumentParser(description='Video processing')
+    # parser.add_argument('--i', type=str, help='Input file path')
+    # parser.add_argument('--o', nargs='?', type=str, default='../output/output.txt', help='Output file path')
+    # args = parser.parse_args()
+    pathToVideos = os.path.join('E:', 'wfs0.4 test', 'videosTest2')
+    # pathToVideos = os.path.join('../output')
+    filesNameList = os.listdir(pathToVideos)
+    outputFile = open('..\\output\\result.txt', 'wb')
+    regex = re.compile('^[@a-zA-Z0-9]+$')
+
+    for fileName in filesNameList:
+        currentFilePath = os.path.join(pathToVideos, fileName)
+
+        if os.path.isdir(currentFilePath):
+            outputFile.write((fileName + ': DIRECTORY\n').encode('utf-8'))
+            continue
+
+        img = getFrameFromVideo(currentFilePath)
+
+        if img is None:
+            outputFile.write((fileName + ': unable to open\n').encode('utf-8'))
+            continue
+
+        extractor = text_extractor.PyTextExtractor()
+        result_list = extractor.get_image_text(img)
+        isCorrectFileName = False
+
+        for text in result_list:
+            if regex.match(text):
+                isCorrectFileName = True
+                newFilePath = os.path.join(pathToVideos, text)
+                copyFile(currentFilePath, newFilePath, fileName)
+                break
+
+        if not isCorrectFileName:
+            outputFile.write((fileName + ': ' + convertStringArrayToString(result_list) + '\n').encode('utf-8'))
+
+        print(result_list)
+
+    outputFile.close()

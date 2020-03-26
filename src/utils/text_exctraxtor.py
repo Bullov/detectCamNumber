@@ -9,7 +9,7 @@ import pytesseract
 from imutils.object_detection import non_max_suppression
 
 
-class PyTextractor:
+class PyTextExtractor:
     layer_names = ('feature_fusion/Conv_7/Sigmoid', 'feature_fusion/concat_3',)
 
     def __init__(self, east=None):
@@ -172,6 +172,9 @@ class PyTextractor:
             end_X = int(end_X * ratio_width) + 20
             end_Y = int(end_Y * ratio_height) + 20
 
+            if (start_Y < 0):
+                start_Y = 0
+
             ROIImage = image[start_Y:end_Y, start_X:end_X]
             img_gray = cv2.cvtColor(ROIImage, cv2.COLOR_BGR2RGB)
             config = '--psm 6' if numbers else ''
@@ -181,6 +184,7 @@ class PyTextractor:
             # draw the bounding box on the image
             if display:
                 cv2.rectangle(image, (start_X, start_Y), (end_X, end_Y), (0, 255, 0), 2)
+                # print(start_X, start_Y, end_X, end_Y)
 
                 cv2.imshow('SubImage', ROIImage)
                 cv2.waitKey(100)
