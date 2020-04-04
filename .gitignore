@@ -1,4 +1,5 @@
 # Project exclude paths
 /output/
+/videos/
 /.idea/
 /venv/
