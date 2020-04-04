@@ -1,11 +1,8 @@
 import cv2 as cv
-import numpy as np
 import os
 import re
-import math
 import argparse
-import src.utils.text_exctraxtor as text_extractor
-import pytesseract
+import utils.text_exctraxtor as text_extractor
 
 
 def getFrameFromVideo(path_to_video):
@@ -63,14 +60,14 @@ def convertStringArrayToString(str_arr):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(description='Video processing')
-    # parser.add_argument('--i', type=str, help='Input file path')
-    # parser.add_argument('--o', nargs='?', type=str, default='../output/output.txt', help='Output file path')
-    # args = parser.parse_args()
-    pathToVideos = os.path.join('E:', 'wfs0.4 test', 'videosTest2')
-    # pathToVideos = os.path.join('../output')
+    parser = argparse.ArgumentParser(description='Detecting cam name/number from raw h264 video file')
+    parser.add_argument('--i', type=str, help='Input path to folder with videos')
+    parser.add_argument('--o', nargs='?', type=str, default='../output/result.txt', help='Output log file path')
+    args = parser.parse_args()
+
+    pathToVideos = args.i
     filesNameList = os.listdir(pathToVideos)
-    outputFile = open('..\\output\\result.txt', 'wb')
+    outputFile = open(args.o, 'wb')
     regex = re.compile('^[@a-zA-Z0-9]+$')
 
     for fileName in filesNameList:
@@ -99,7 +96,5 @@ if __name__ == '__main__':
 
         if not isCorrectFileName:
             outputFile.write((fileName + ': ' + convertStringArrayToString(result_list) + '\n').encode('utf-8'))
-
-        print(result_list)
 
     outputFile.close()
