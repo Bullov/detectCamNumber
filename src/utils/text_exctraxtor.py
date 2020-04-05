@@ -41,7 +41,7 @@ class PyTextExtractor:
         start = time.time()
         boxes = self._get_boxes(num_rows, num_cols, confidence, geometry, scores, min_boxes, max_iterations)
         end = time.time()
-        print('Found {boxes} ROIs {seconds:.6f} seconds'.format(boxes=len(boxes), seconds=(end - start)))
+        # print('Found {boxes} ROIs {seconds:.6f} seconds'.format(boxes=len(boxes), seconds=(end - start)))
 
         return self._extract_text(
             loaded_image, boxes, display, numbers, ratio_width, ratio_height
@@ -69,13 +69,13 @@ class PyTextExtractor:
         blob = cv2.dnn.blobFromImage(
             image, 1.0, (width, height), (123.68, 116.78, 103.94), swapRB=True, crop=False
         )
-        start = time.time()
+        # start = time.time()
         self.east_net.setInput(blob)
         (scores, geometry) = self.east_net.forward(self.layer_names)
-        end = time.time()
+        # end = time.time()
 
         # show timing information on text prediction
-        print('[INFO] text detection took {:.6f} seconds'.format(end - start))
+        # print('[INFO] text detection took {:.6f} seconds'.format(end - start))
         return (scores, geometry)
 
     def _load_assets(self):
@@ -83,7 +83,7 @@ class PyTextExtractor:
         start = time.time()
         self.east_net = cv2.dnn.readNet(self.east)
         end = time.time()
-        print('[INFO] Loaded EAST text detector {:.6f} seconds ...'.format(end - start))
+        # print('[INFO] Loaded EAST text detector {:.6f} seconds ...'.format(end - start))
 
     def _get_east(self):
         if os.path.exists(self.east):
@@ -92,7 +92,7 @@ class PyTextExtractor:
         pkg_path = os.path.dirname(__file__)
         data_file = os.path.join(pkg_path, self.east)
         os.makedirs(os.path.dirname(data_file))
-        print('Downloading east data file  to {}'.format(data_file))
+        # print('Downloading east data file  to {}'.format(data_file))
         with open(data_file, 'wb') as fp:
             with requests.get('https://tinyurl.com/yxdd7kb5', stream=True) as response:
                 for chunk in response.iter_content(chunk_size=2048):
@@ -156,8 +156,8 @@ class PyTextExtractor:
                 return boxes
             else:
                 confidence /= 2
-                print('Couldn\'t find at least {min_boxes} boxe(s), halving confidence to {confidence}'.
-                      format(min_boxes=min_boxes, confidence=confidence))
+                # print('Couldn\'t find at least {min_boxes} boxe(s), halving confidence to {confidence}'.
+                #       format(min_boxes=min_boxes, confidence=confidence))
 
     def _extract_text(self, image, boxes, display, numbers, ratio_width, ratio_height):
         extracted_text = []

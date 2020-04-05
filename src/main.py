@@ -9,7 +9,7 @@ def getFrameFromVideo(path_to_video):
     capture = cv.VideoCapture()
     capture.open(cv.samples.findFileOrKeep(path_to_video))
     if not capture.isOpened():
-        print('Unable to open: ' + path_to_video)
+        # print('Unable to open: ' + path_to_video)
         return None
 
     # defaultWidth = capture.get(cv.CAP_PROP_FRAME_WIDTH)
@@ -69,18 +69,24 @@ if __name__ == '__main__':
     filesNameList = os.listdir(pathToVideos)
     outputFile = open(args.o, 'wb')
     regex = re.compile('^[@a-zA-Z0-9]+$')
+    print('total:', len(filesNameList), flush=True)
+    i = 1
 
     for fileName in filesNameList:
         currentFilePath = os.path.join(pathToVideos, fileName)
 
         if os.path.isdir(currentFilePath):
             outputFile.write((fileName + ': DIRECTORY\n').encode('utf-8'))
+            print(i, flush=True)
+            i += 1
             continue
 
         img = getFrameFromVideo(currentFilePath)
 
         if img is None:
             outputFile.write((fileName + ': unable to open\n').encode('utf-8'))
+            print(i, flush=True)
+            i += 1
             continue
 
         extractor = text_extractor.PyTextExtractor()
@@ -96,5 +102,7 @@ if __name__ == '__main__':
 
         if not isCorrectFileName:
             outputFile.write((fileName + ': ' + convertStringArrayToString(result_list) + '\n').encode('utf-8'))
+        print(i, flush=True)
+        i += 1
 
     outputFile.close()
